@@ -14,4 +14,5 @@ module.exports = app => {
     router.get('/drug/find', controller.drug.find);
     router.post('/drug/add', controller.drug.add);
     router.delete('/drug/del', controller.drug.del);
+    router.put('/drug/put', controller.drug.update);
 };

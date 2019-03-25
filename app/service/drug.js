@@ -11,11 +11,18 @@ class DrugService extends Service {
     }
     async addDrug(data) {
         const drug = await this.app.mysql.insert('drug', data);
-        return { drug };
+        const updateSuccess = drug.affectedRows === 1;
+        return { success: updateSuccess };
     }
     async delDrug(data) {
         const drug = await this.app.mysql.delete('drug', data);
-        return { drug };
+        const updateSuccess = drug.affectedRows === 1;
+        return { success: updateSuccess };
+    }
+    async update(data) {
+        const drug = await this.app.mysql.update('drug', data);
+        const updateSuccess = drug.affectedRows === 1;
+        return { success: updateSuccess };
     }
 }
 

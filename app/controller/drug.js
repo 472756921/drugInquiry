@@ -67,6 +67,14 @@ class DrugController extends Controller {
         ctx.body = drugs;
         ctx.status = 200;
     }
+    async update() {
+        const ctx = this.ctx;
+        ctx.validate(createDrugRule);
+        const body = JSON.stringify(ctx.request.body);
+        const drugs = await ctx.service.drug.update(body);
+        ctx.body = drugs;
+        ctx.status = 200;
+    }
 }
 
 module.exports = DrugController;
