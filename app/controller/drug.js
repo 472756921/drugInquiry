@@ -1,40 +1,7 @@
 'use strict';
+const { createDrugRule } = require('../public/common');
 
 const Controller = require('egg').Controller;
-
-
-const createDrugRule = {
-    name1: {
-        required: true,
-    },
-    name2: {
-        required: true,
-    },
-    factory: {
-        required: true,
-    },
-    Indication: {
-        required: true,
-    },
-    Dosage: {
-        required: true,
-    },
-    Precautions: {
-        required: true,
-    },
-    AdverseReactions: {
-        required: true,
-    },
-    FormulationSpecification: {
-        required: true,
-    },
-    AddDate: {
-        required: true,
-    },
-    optiong: {
-        required: true,
-    },
-};
 
 
 class DrugController extends Controller {

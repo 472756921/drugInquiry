@@ -8,6 +8,8 @@ module.exports = app => {
 
     router.get('/', controller.home.index);
     router.get('/user/info', controller.user.info);
+    // 爬虫
+    router.get('/spider/getInfo', controller.spider.getInfo);
 
     // 药品管理
     router.get('/drug/list', controller.drug.list);

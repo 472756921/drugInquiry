@@ -35,10 +35,12 @@ module.exports = appInfo => {
           case 'Validation Failed':
             ctx.body = 'Validation Failed';
             ctx.status = 400;
+            ctx.logger.error('Validation Failed');
           break;
           default:
             ctx.body = 'error';
             ctx.status = 500;
+            ctx.logger.error('500');
         }
       },
     },
