@@ -42,6 +42,14 @@ class DrugController extends Controller {
         ctx.body = drugs;
         ctx.status = 200;
     }
+
+    async listFDA() {
+        const ctx = this.ctx;
+        const query = ctx.query;
+        const drugs = await ctx.service.drug.listFDA(query);
+        ctx.body = drugs;
+        ctx.status = 200;
+    }
 }
 
 module.exports = DrugController;

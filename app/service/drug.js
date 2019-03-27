@@ -24,6 +24,14 @@ class DrugService extends Service {
         const updateSuccess = drug.affectedRows === 1;
         return { success: updateSuccess };
     }
+    async listFDA() {
+        const results = await this.app.mysql.select('fdamessage');
+        return { results };
+    }
+    async FdaFirst() {
+        const results = await this.app.mysql.select('fdatemp');
+        return { results };
+    }
 }
 
 module.exports = DrugService;
