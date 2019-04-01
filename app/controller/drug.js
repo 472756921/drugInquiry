@@ -19,6 +19,18 @@ class DrugController extends Controller {
         ctx.body = drugs;
         ctx.status = 200;
     }
+    async listAdmin() {
+        const ctx = this.ctx;
+        const query = ctx.query;
+        const result = await ctx.app.mysql.beginTransactionScope(async conn => {
+            // don't commit or rollback by yourself
+            const drugs = await ctx.service.drug.listAdmin(query);
+            const page = await ctx.service.drug.getPageInfo(query);
+            return { drugs, page };
+        }, ctx);
+        ctx.body = result;
+        ctx.status = 200;
+    }
     async add() {
         const ctx = this.ctx;
         ctx.validate(createDrugRule);

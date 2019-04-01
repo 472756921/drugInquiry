@@ -15,7 +15,9 @@ module.exports = app => {
     // fda 管理
     router.get('/drug/fda', controller.drug.listFDA);
 
+
     // 药品管理
+    router.get('/drug/listAdmin', controller.drug.listAdmin);
     router.get('/drug/list', controller.drug.list);
     router.get('/drug/find', controller.drug.find);
     router.post('/drug/add', controller.drug.add);
