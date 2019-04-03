@@ -1,17 +1,31 @@
 'use strict';
 const Service = require('egg').Service;
+const moment = require('moment');
 class DrugService extends Service {
-    async list({name='', offset = 20, limit = 0}) {
-        const drugs = await this.app.mysql.query('select d.*, di.name from drug d, drug_disease dd, disease di where d.id=dd.drugID and dd.disease=di.id and (d.name1 like ? or d.name2 like ? or d.name3 like ? or d.name4 like ? or di.name like?) ORDER BY d.AddDate DESC LIMIT ?, ?',['%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%', limit, offset]);
-        return { drugs };
-    }
-    async listAdmin({name='', offset = 20, limit = 0, n = 1}) {
-        let drugs = await this.app.mysql.query('select d.*, di.name from drug d, drug_disease dd, disease di where d.id=dd.drugID and dd.disease=di.id and (d.name1 like ? or d.name2 like ? or d.name3 like ? or d.name4 like ? or di.name like?) ORDER BY d.AddDate DESC LIMIT ?, ?',['%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%', limit, offset]);
-        if(n === 2) { //国内未上市
-            drugs = await this.app.mysql.query('select d.*, di.name from drug d, drug_disease dd, disease di where d.id=dd.drugID and dd.disease=di.id and (d.name1 like ? or d.name2 like ? or d.name3 like ? or d.name4 like ? or di.name like?) and d.CHData is null ORDER BY d.AddDate DESC LIMIT ?, ?',['%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%', limit, offset]);
+    async list({name=''}) {
+        try {
+            const result = await this.ctx.app.mysql.beginTransactionScope(async conn => {
+                const disease = await conn.select('disease',{where:{name: name}});
+                if(disease.length != 0){ //输入的是疾病类型
+                    const drugs = await conn.query('SELECT d.*, di.name as diseaseName from disease di, drug d, drug_disease dd where dd.drugID=d.id and di.id=dd.disease and di.id=? ORDER BY d.AddDate DESC',[disease[0].id]);
+                    return drugs
+                } else {
+                    const drugs = await conn.query('select GROUP_CONCAT(di.name SEPARATOR " , ") as diseaseName ,d.* from drug d, drug_disease dd, disease di where (d.name1 like ? or d.name2 like ? or d.name3 like ? or d.name4 like ?) and d.id=dd.drugID and dd.disease=di.id GROUP BY d.id',['%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%']);
+                    return drugs
+                }
+            });
+            return {data: result}
+        } catch (e) {
+            return { success: false, code: 500, error: e.message};
         }
-        if(n === 3) {//国内上市
-            drugs = await this.app.mysql.query('select d.*, di.name from drug d, drug_disease dd, disease di where d.id=dd.drugID and dd.disease=di.id and (d.name1 like ? or d.name2 like ? or d.name3 like ? or d.name4 like ? or di.name like?) and d.CHData is not null ORDER BY d.AddDate DESC LIMIT ?, ?',['%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%', limit, offset]);
+    }
+    async listAdmin({name='', n = 1}) {
+        let drugs = await this.app.mysql.query('select GROUP_CONCAT(di.id SEPARATOR " , ") as diseaseID ,GROUP_CONCAT(di.name SEPARATOR " , ") as diseaseName ,d.* from drug d, drug_disease dd, disease di where (d.name1 like ? or d.name2 like ? or d.name3 like ? or d.name4 like ?) and d.id=dd.drugID and dd.disease=di.id GROUP BY d.id',['%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%']);
+        if(n == 2) { //国内未上市
+            drugs = await this.app.mysql.query('select GROUP_CONCAT(di.id SEPARATOR " , ") as diseaseID ,GROUP_CONCAT(di.name SEPARATOR " , ") as diseaseName ,d.* from drug d, drug_disease dd, disease di where (d.name1 like ? or d.name2 like ? or d.name3 like ? or d.name4 like ?) and d.id=dd.drugID and dd.disease=di.id and d.CHData is null group by d.id ORDER BY d.AddDate DESC',['%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%']);
+        }
+        if(n == 3) {//国内上市
+            drugs = await this.app.mysql.query('select GROUP_CONCAT(di.id SEPARATOR " , ") as diseaseID ,GROUP_CONCAT(di.name SEPARATOR " , ") as diseaseName ,d.* from drug d, drug_disease dd, disease di where (d.name1 like ? or d.name2 like ? or d.name3 like ? or d.name4 like ?) and d.id=dd.drugID and dd.disease=di.id and d.CHData is not null group by d.id ORDER BY d.AddDate DESC',['%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%']);
         }
         return drugs ;
     }
@@ -20,42 +34,70 @@ class DrugService extends Service {
         return { drug };
     }
     async addDrug(data) {
-        const drug = await this.app.mysql.insert('drug', data);
-        const updateSuccess = drug.affectedRows === 1;
-        return { success: updateSuccess };
+        data.AddDate = moment(new Date()).format('YYYY-MM-DD');
+        data.optiong = 1;
+        try {
+            const result = await this.ctx.app.mysql.beginTransactionScope(async conn => {
+                const drug = await conn.insert('drug', data);
+                const drug_disease = await conn.insert('drug_disease',{drugID: drug.insertId, disease: data.classType});
+                const drug_success = drug.affectedRows === 1;
+                const drug_disease_success = drug_disease.affectedRows === 1;
+                return { success: drug_success && drug_disease_success, code: drug_success && drug_disease_success ? 200 : 500 };
+            });
+            return result;
+        } catch (e) {
+            return { success: false, code: 500, error: e.message};
+        }
     }
-    async delDrug(data) {
-        const drug = await this.app.mysql.delete('drug', data);
-        const updateSuccess = drug.affectedRows === 1;
-        return { success: updateSuccess };
+    async delDrug({id}) {
+        try {
+            const result = await this.ctx.app.mysql.beginTransactionScope(async conn => {
+                const drug = await conn.delete('drug', {id: id});
+                const drug_disease = await conn.delete('drug_disease', {drugID: id});
+                const drug_success = drug.affectedRows === 1;
+                const drug_disease_success = drug_disease.affectedRows != 0;
+                return { success: drug_success && drug_disease_success, code: drug_success && drug_disease_success ? 200 : 500 };
+            });
+            return result;
+        } catch (e) {
+            return { success: false, code: 500, error: e.message};
+        }
     }
     async update(data) {
-        const drug = await this.app.mysql.update('drug', data);
-        const updateSuccess = drug.affectedRows === 1;
-        return { success: updateSuccess };
+        const type = data.classType;
+        data.classType = 0;
+        try{
+            const result = await this.ctx.app.mysql.beginTransactionScope(async conn => {
+                let d = [];
+                for(let i=0; i<type.length;i++){
+                    d.push({drugID: data.id, disease: type[i]});
+                };
+                const drug = await this.app.mysql.update('drug', data);
+                const updateSuccess = drug.affectedRows === 1;
+                const drug_diseaseR = await conn.delete('drug_disease', {drugID: data.id});
+                const R = drug_diseaseR.affectedRows > 0;
+                const drug_diseaseA = await conn.insert('drug_disease', d);
+                const A = drug_diseaseA.affectedRows > 0;
+                return { success: updateSuccess && R && A, code: updateSuccess && R && A ? 200 : 500 };
+
+            });
+        } catch (e) {
+            return { success: false, code: 500, error: e.message};
+        }
     }
     async listFDA() {
         const results = await this.app.mysql.select('fdamessage');
-        return { results };
+        return { results, code: 200 };
+    }
+    async updateFDA(data) {
+        const results = await this.app.mysql.update('fdamessage', data);
+        const success = results.affectedRows === 1;
+        return { success: success, code: 200 };
     }
     async FdaFirst() {
         const results = await this.app.mysql.select('fdatemp');
         return { results };
     }
-
-    async getPageInfo({name='', n = 1}) {
-        let drugs = await this.app.mysql.query('select count(*) as total from drug d, drug_disease dd, disease di where d.id=dd.drugID and dd.disease=di.id and (d.name1 like ? or d.name2 like ? or d.name3 like ? or d.name4 like ? or di.name like?) ORDER BY d.AddDate DESC',['%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%']);
-        if(n === 2) { //国内未上市
-            drugs = await this.app.mysql.query('select count(*) as total di.name from drug d, drug_disease dd, disease di where d.id=dd.drugID and dd.disease=di.id and (d.name1 like ? or d.name2 like ? or d.name3 like ? or d.name4 like ? or di.name like?) and d.CHData is null ORDER BY d.AddDate DESC',['%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%']);
-        }
-        if(n === 3) {//国内上市
-            drugs = await this.app.mysql.query('select count(*) as total di.name from drug d, drug_disease dd, disease di where d.id=dd.drugID and dd.disease=di.id and (d.name1 like ? or d.name2 like ? or d.name3 like ? or d.name4 like ? or di.name like?) and d.CHData is not null ORDER BY d.AddDate DESC',['%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%']);
-        }
-        return {
-            total: drugs[0].total,
-        };
-    }
-
 }
 
 module.exports = DrugService;

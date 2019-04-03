@@ -33,9 +33,9 @@ module.exports = appInfo => {
       all(err, ctx) {
         switch (err.message) {
           case 'Validation Failed':
-            ctx.body = 'Validation Failed';
+            ctx.body = err.message;
             ctx.status = 400;
-            ctx.logger.error('Validation Failed');
+            ctx.logger.error('Validation Failed:' + err.message);
           break;
           default:
             ctx.body = 'error';

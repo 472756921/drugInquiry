@@ -20,7 +20,7 @@ class SpiderController extends Controller {
                 ctx.status = code;
             }
         } else {
-            ctx.body = {data: 'FDA 链接失败，请稍后再试'};
+            ctx.body = data;
             ctx.status = code;
         }
     }

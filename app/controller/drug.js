@@ -22,43 +22,48 @@ class DrugController extends Controller {
     async listAdmin() {
         const ctx = this.ctx;
         const query = ctx.query;
-        const result = await ctx.app.mysql.beginTransactionScope(async conn => {
-            // don't commit or rollback by yourself
-            const drugs = await ctx.service.drug.listAdmin(query);
-            const page = await ctx.service.drug.getPageInfo(query);
-            return { drugs, page };
-        }, ctx);
-        ctx.body = result;
+        const drugs = await ctx.service.drug.listAdmin(query);
+        ctx.body = drugs;
         ctx.status = 200;
     }
     async add() {
         const ctx = this.ctx;
-        ctx.validate(createDrugRule);
-        const body = JSON.stringify(ctx.request.body);
-        const drugs = await ctx.service.drug.addDrug(body);
+        ctx.validate(createDrugRule, ctx.request.body);
+        const drugs = await ctx.service.drug.addDrug(ctx.request.body);
         ctx.body = drugs;
         ctx.status = 200;
     }
     async del() {
         const ctx = this.ctx;
-        const query = ctx.query;
-        const drugs = await ctx.service.drug.delDrug(query);
+        const data = ctx.request.body;
+        let id = data.id;
+        try {
+            id = Number(id);
+        } catch (e) {
+            ctx.body = {data: 'is not id'};
+            ctx.status = 400;
+        }
+        const drugs = await ctx.service.drug.delDrug({id: id});
         ctx.body = drugs;
         ctx.status = 200;
     }
     async update() {
         const ctx = this.ctx;
-        ctx.validate(createDrugRule);
-        const body = JSON.stringify(ctx.request.body);
-        const drugs = await ctx.service.drug.update(body);
+        ctx.validate(createDrugRule, ctx.request.body);
+        const drugs = await ctx.service.drug.update(ctx.request.body);
         ctx.body = drugs;
         ctx.status = 200;
     }
 
     async listFDA() {
         const ctx = this.ctx;
-        const query = ctx.query;
-        const drugs = await ctx.service.drug.listFDA(query);
+        const drugs = await ctx.service.drug.listFDA();
+        ctx.body = drugs;
+        ctx.status = 200;
+    }
+    async updateFDA() {
+        const ctx = this.ctx;
+        const drugs = await ctx.service.drug.updateFDA(ctx.request.body);
         ctx.body = drugs;
         ctx.status = 200;
     }

@@ -14,7 +14,15 @@ module.exports = app => {
 
     // fda 管理
     router.get('/drug/fda', controller.drug.listFDA);
+    router.put('/drug/fda', controller.drug.updateFDA);
 
+
+
+    // 疾病管理
+    router.get('/disease/list', controller.disease.list);
+    router.put('/disease/put', controller.disease.update);
+    router.post('/disease/add', controller.disease.add);
+    router.delete('/disease/del', controller.disease.del);
 
     // 药品管理
     router.get('/drug/listAdmin', controller.drug.listAdmin);
