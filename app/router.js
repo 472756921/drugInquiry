@@ -16,8 +16,6 @@ module.exports = app => {
     router.get('/drug/fda', controller.drug.listFDA);
     router.put('/drug/fda', controller.drug.updateFDA);
 
-
-
     // 疾病管理
     router.get('/disease/list', controller.disease.list);
     router.put('/disease/put', controller.disease.update);
@@ -32,7 +30,18 @@ module.exports = app => {
     router.delete('/drug/del', controller.drug.del);
     router.put('/drug/put', controller.drug.update);
 
+
+    // 统计 热门
+    router.put('/drug/drugCount', controller.drug.drugCount);
+    router.get('/drug/getHotDrug', controller.drug.getHotDrug);
+
     // 用户管理
     router.get('/admin/list', controller.admin.list);
+    router.post('/admin/add', controller.admin.add);
+    router.delete('/admin/del', controller.admin.del);
+    router.put('/admin/update', controller.admin.update);
+    router.post('/admin/login', controller.admin.login);
+    router.get('/admin/checkUserStatus', controller.admin.check);
+    router.get('/admin/loginOut', controller.admin.loginOut);
 
 };
