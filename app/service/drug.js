@@ -5,12 +5,29 @@ class DrugService extends Service {
     async list({name=''}) {
         try {
             const result = await this.ctx.app.mysql.beginTransactionScope(async conn => {
-                const disease = await conn.select('disease',{where:{name: name}});
+                const disease = await conn.query('select * from disease where name like ?', ['%'+name+'%']);
                 if(disease.length != 0){ //输入的是疾病类型
-                    const drugs = await conn.query('SELECT d.*, di.name as diseaseName from disease di, drug d, drug_disease dd where dd.drugID=d.id and di.id=dd.disease and di.id=? ORDER BY d.AddDate DESC',[disease[0].id]);
+                    let datal = [];
+                    let psql = '';
+                    disease.map((it, i) => {
+                        if(disease.length === 1) {
+                            psql = '(di.id = ?)';
+                        } else {
+                            if (i === 0){
+                                psql = '(di.id = ?'
+                            } else if (disease.length -1 === i) {
+                                psql += ' or di.id = ? )'
+                            } else {
+                                psql += ' or di.id = ?'
+                            }
+                        }
+                        datal.push(it.id);
+                    });
+                    const sql = 'SELECT d.*, GROUP_CONCAT(di.name SEPARATOR " , ") as diseaseName from disease di, drug d, drug_disease dd where dd.drugID=d.id and di.id=dd.disease and ' + psql + ' GROUP BY d.id ORDER BY d.checkCount DESC';
+                    const drugs = await conn.query( sql , datal);
                     return drugs
                 } else {
-                    const drugs = await conn.query('select GROUP_CONCAT(di.name SEPARATOR " , ") as diseaseName ,d.* from drug d, drug_disease dd, disease di where (d.name1 like ? or d.name2 like ? or d.name3 like ? or d.name4 like ?) and d.id=dd.drugID and dd.disease=di.id GROUP BY d.id',['%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%']);
+                    const drugs = await conn.query('select GROUP_CONCAT(di.name SEPARATOR " , ") as diseaseName ,d.* from drug d, drug_disease dd, disease di where (d.name1 like ? or d.name2 like ? or d.name3 like ? or d.name4 like ?) and d.id=dd.drugID and dd.disease=di.id GROUP BY d.id ORDER BY d.checkCount DESC',['%'+name+'%', '%'+name+'%', '%'+name+'%', '%'+name+'%']);
                     return drugs
                 }
             });
@@ -66,9 +83,10 @@ class DrugService extends Service {
             return { success: false, code: 500, error: e.message};
         }
     }
-    async update(data) {
+    async update(data, userID) {
         const type = data.classType;
         data.classType = 0;
+        data.optiong = userID;
         try{
             const result = await this.ctx.app.mysql.beginTransactionScope(async conn => {
                 const drug = await this.app.mysql.update('drug', data);
@@ -102,8 +120,12 @@ class DrugService extends Service {
         const results = await this.app.mysql.update('drug', data);
         return { results };
     }
+    async drugCountByPhone(data) {
+        const results = await this.app.mysql.update('drug', data);
+        return { results };
+    }
     async getHotDrug() {
-        const results = await this.app.mysql.select('drug', {orders:[['checkCount','desc']], limit: 6});
+        const results = await this.app.mysql.query('SELECT d.*, GROUP_CONCAT( di.NAME SEPARATOR " , " ) AS diseaseName FROM disease di, drug d, drug_disease dd  WHERE dd.drugID = d.id  AND di.id = dd.disease  GROUP BY d.id ORDER BY d.checkCount DESC LIMIT 6');
         return { results };
     }
 

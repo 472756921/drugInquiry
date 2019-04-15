@@ -50,7 +50,7 @@ class DrugController extends Controller {
     async update() {
         const ctx = this.ctx;
         ctx.validate(createDrugRule, ctx.request.body);
-        const drugs = await ctx.service.drug.update(ctx.request.body);
+        const drugs = await ctx.service.drug.update(ctx.request.body, ctx.session.user.id);
         ctx.body = drugs;
         ctx.status = 200;
     }
@@ -71,6 +71,13 @@ class DrugController extends Controller {
         const ctx = this.ctx;
         const data = ctx.request.body;
         const drugs = await ctx.service.drug.drugCount({id: data.id, checkCount:data.checkCount + 1});
+        ctx.body = drugs;
+        ctx.status = 200;
+    }
+    async drugCountByPhone() {
+        const ctx = this.ctx;
+        const query = ctx.query;
+        const drugs = await ctx.service.drug.drugCountByPhone({id: query.id, checkCount:query.checkCount + 1});
         ctx.body = drugs;
         ctx.status = 200;
     }
