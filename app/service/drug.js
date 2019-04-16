@@ -87,6 +87,7 @@ class DrugService extends Service {
         const type = data.classType;
         data.classType = 0;
         data.optiong = userID;
+        data.updateDate = new Date();
         try{
             const result = await this.ctx.app.mysql.beginTransactionScope(async conn => {
                 const drug = await this.app.mysql.update('drug', data);
