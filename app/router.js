@@ -6,10 +6,8 @@
 module.exports = app => {
     const { router, controller } = app;
 
-
     router.get('/drugSystem/', controller.home.index);
     router.get('/drugSystem/user/info', controller.user.info);
-
 
     // 爬虫
     router.get('/drugSystem/spider/getInfo', controller.spider.getInfo);

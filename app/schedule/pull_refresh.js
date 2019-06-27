@@ -1,7 +1,7 @@
 module.exports = {
     schedule: {
         interval: '24h', // 24小時钟间隔
-        type: 'all', // 指定所有的 worker 都需要执行
+        type: 'worker', // 指定随机一个 worker 执行
     },
     async task(ctx) {
         const {data, code} = await ctx.service.spider.Spider();

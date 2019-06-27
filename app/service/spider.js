@@ -1,9 +1,8 @@
 'use strict';
 const Service = require('egg').Service;
-const cheerio = require('cheerio');
 const superagent = require('superagent');
 
-const pageUrl = 'https://www.fda.gov/Drugs/InformationOnDrugs/ApprovedDrugs/ucm279174.htm';
+const pageUrl = 'https://www.fda.gov/drugs/resources-information-approved-drugs/hematologyoncology-cancer-approvals-safety-notifications';
 
 
 class SpiderService extends Service {
@@ -11,10 +10,11 @@ class SpiderService extends Service {
         try {
             const webData = await superagent.get(pageUrl);
             const data = webData.text;
-            const start = data.indexOf('<article>');
-            const end = data.indexOf('</article>');
-            let article = data.slice(start+9, end).replace(/[\r\n\t]/g, "");
+            const start = data.indexOf('<main>');
+            const end = data.indexOf('</main>');
+            let article = data.slice(start+6, end).replace(/[\r\n\t]/g, "");
             article = article.replace(/<header>([\S\s\t]*?)<\/header>/g, '');
+            console.log(article);
             article = article.replace(/<div([\S\s\t]*?)>([\S\s\t]*?)<\/div>/g, '');
             article = article.replace(/<p([\S\s\t]*?)>([\S\s\t]*?)<\/p>/g, '');
             article = article.split(/<ul>([\S\s\t]*?)<\/ul>/);
